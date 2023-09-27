@@ -13,6 +13,7 @@ import com.example.weathernow.webservice.response.weather.WeatherResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import retrofit2.http.HTTP
@@ -25,24 +26,14 @@ class WeatherViewModel @Inject constructor(
 )  : ViewModel() {
     private val TAG = "WeatherViewModel"
 
+    val weatherData: StateFlow<ResultInfo<WeatherData>>
+        get() = weatherRepository.weatherDataFlow
+
     init {
         fetchData()
     }
 
-    private val _channel = Channel<ResultInfo<WeatherData>>()
-    val channel = _channel.receiveAsFlow()
-
-    private val _weatherData = MutableLiveData<WeatherData>()
-    val weatherData: LiveData<WeatherData>
-        get() = _weatherData
-
-    fun fetchData(queryString: String = "") = viewModelScope.launch(Dispatchers.IO) {
-        Log.d(TAG,"fetchData() is called")
-        val weatherResponse = weatherRepository.fetchData(queryString)
-        weatherResponse.data?.let {
-            _weatherData.postValue(it)
-        }
-
-        _channel.send(weatherResponse)
+    fun fetchData(queryString: String = "") = viewModelScope.launch {
+        weatherRepository.fetchData(queryString)
     }
 }

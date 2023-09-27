@@ -32,37 +32,35 @@ class WeatherFragment: Fragment(R.layout.fragment_weather) {
     private val viewModel: WeatherViewModel by viewModels()
     private lateinit var connectivityStatus: NetworkConnectivityStatus
 
-    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val binding = FragmentWeatherBinding.bind(view)
         val menuHost: MenuHost = requireActivity()
 
-        viewModel.weatherData.observe(viewLifecycleOwner) { weatherData ->
-            Log.d(TAG,"Weather Data = $weatherData")
-            binding.apply {
-                textViewCity.text = weatherData.city
-                textViewWeatherCondition.text = "${weatherData.main}"
-                textViewTemperatureRange.text = "High: ${weatherData.temp_max}\u2103   Low: ${weatherData.temp_min}\u2103"
-                textViewFeelslike.text = "${weatherData.feels_like}\u2103"
-                textViewHumidity.text = "${weatherData.humidity} %"
-                textViewSunrise.text = weatherData.sunrise
-                textViewSunset.text = weatherData.sunset
-                textViewTemperature.text = "${weatherData.temp}\u2103"
-                textViewWind.text = "${weatherData.speed} mph | ${weatherData.deg}"
-                imageViewIcon.load(weatherData.icon)
-                textViewVisibility.text = "${weatherData.visibility} km"
-            }
-        }
-
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.channel.collect {
-                    when(it) {
+                viewModel.weatherData.collect {resultInfo ->
+                    when(resultInfo) {
                         is ResultInfo.Loading -> {}
-                        is ResultInfo.Success -> {}
+                        is ResultInfo.Success -> {
+                            val _data = resultInfo.data
+                            Log.d(TAG,"Weather Data = $_data")
+                            binding.apply {
+                                textViewCity.text = _data?.city
+                                textViewWeatherCondition.text = "${_data?.main}"
+                                textViewTemperatureRange.text = "High: ${_data?.temp_max}\u2103   Low: ${_data?.temp_min}\u2103"
+                                textViewFeelslike.text = "${_data?.feels_like}\u2103"
+                                textViewHumidity.text = "${_data?.humidity} %"
+                                textViewSunrise.text = _data?.sunrise
+                                textViewSunset.text = _data?.sunset
+                                textViewTemperature.text = "${_data?.temp}\u2103"
+                                textViewWind.text = "${_data?.speed} mph | ${_data?.deg}"
+                                imageViewIcon.load(_data?.icon)
+                                textViewVisibility.text = "${_data?.visibility} km"
+                            }
+                        }
                         is ResultInfo.Error -> {
-                            Snackbar.make(binding.root,it.error, Snackbar.LENGTH_LONG).show()
+                            Snackbar.make(binding.root,resultInfo.error, Snackbar.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -93,8 +91,6 @@ class WeatherFragment: Fragment(R.layout.fragment_weather) {
                 }
             }
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
-
-
     }
 }
 
